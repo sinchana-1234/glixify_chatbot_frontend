@@ -3,6 +3,9 @@ import React, { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import ChatChart, { ChartPayload } from "./ChatChart";
+import AGPChart from "./AGPChart";
+import TIRChart from "./TIRChart";
+import EHbA1cTIRChart from "./EHbA1cTIRChart";
 
 // Extend Window interface for potential browser APIs
 declare global {
@@ -24,19 +27,27 @@ declare global {
  * language hint.  The server transcribes and translates the audio as
  * necessary before generating a response from the LangChain agent.
  */
+interface ChatMessage {
+    role: "user" | "bot";
+    message: string;
+    metadata?: any;
+    agpChartData?: { time_blocks: any[] | null; daily_metrics: any[]; summary?: any; tir?: any };
+    ehba1cTirData?: { periods: any[]; device_cycles: any[]; first_day?: any; last_day?: any };
+    chartData?: ChartPayload;
+}
+
 const Chatbot: React.FC = () => {
     // Toggle chatbot visibility
     const [isOpen, setIsOpen] = useState<boolean>(false);
     // User's text input
     const [userQuery, setUserQuery] = useState<string>("");
     // Chat history (user and bot messages)
-    const [chatHistory, setChatHistory] = useState<
-        { role: "user" | "bot"; message: string; metadata?: any; chartData?: ChartPayload }[]
-    >([
+    // Chat history (user and bot messages)
+    const [chatHistory, setChatHistory] = useState<ChatMessage[]>([
         {
             role: "bot",
             message:
-                "Hello! I am your Revival365 AI Assistant. How can I help you today? You want know your records, CGM values,  medication schedules with dates ",
+                "Hello! I am your Glixify AI Assistant. How can I help you today? You want know your records, CGM values,  medication schedules with dates ",
         },
     ]);
     // Loading state for API requests
@@ -184,7 +195,7 @@ const Chatbot: React.FC = () => {
                     "Content-Type": "application/json",
                     // Use doctor token for now; in a real app this should come from auth context
                     // Authorization: `Bearer testtt`,
-                                        Authorization: `Bearer eyJraWQiOiJOaXBka0hRcXR6L2JCcjR2OXBvSGE4eWMwdnFpYnV4QWlVZnd6MFdEbSs0PSIsImFsZyI6IlJTMjU2In0.eyJzdWIiOiI4MWIzOWRmYS1hMDgxLTcwYTQtMjhmMS00ZjJlNTc2NjNjYjMiLCJjdXN0b206bGljZW5zZU5vIjoibnVsbCIsInpvbmVpbmZvIjoibnVsbCIsImJpcnRoZGF0ZSI6IjE5OTgtMDYtMDYiLCJnZW5kZXIiOiJGZW1hbGUiLCJpc3MiOiJodHRwczovL2NvZ25pdG8taWRwLmFwLXNvdXRoLTEuYW1hem9uYXdzLmNvbS9hcC1zb3V0aC0xX1FvOWM0ZHNBTCIsImN1c3RvbTpob3NwaXRhbE5hbWUiOiJudWxsIiwiY3VzdG9tOmlkIjoiNTE2IiwicHJlZmVycmVkX3VzZXJuYW1lIjoiZW1haWwiLCJsb2NhbGUiOiJudWxsIiwiY3VzdG9tOnJvbGVOYW1lIjoiSGVhbHRoIENvYWNoIiwidXBkYXRlZF9hdCI6MTc3MzgxMDUzNSwiY3VzdG9tOnppcGNvZGUiOiJudWxsIiwiYXV0aF90aW1lIjoxNzg5MTAxNzg5LCJuaWNrbmFtZSI6Im51bGwiLCJleHAiOjE3ODkxMDUzODksImlhdCI6MTc4OTEwMTc4OSwianRpIjoiODRhY2M3MGQtNWQzZS00MjRhLTk1ZjYtOWRhZThjMTI0MDRlIiwiZW1haWwiOiJhc21hLnNAeW9wbWFpbC5jb20iLCJjdXN0b206b3JnYW5pemF0aW9uIjoibnVsbCIsIndlYnNpdGUiOiJudWxsIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImFkZHJlc3MiOnsiZm9ybWF0dGVkIjoiQmFuZ2Fsb3JlIn0sInByb2ZpbGUiOiJodHRwczovL2Rldi1kYXRhLmdsaXhpZnkuYWkvcHJvZmlsZS81MTYvMTc3NDYwMTExMTcyMGp3dC5pY29uLjZhOWFjMTE3LnBuZyIsInBob25lX251bWJlcl92ZXJpZmllZCI6dHJ1ZSwiY29nbml0bzp1c2VybmFtZSI6IjgxYjM5ZGZhLWEwODEtNzBhNC0yOGYxLTRmMmU1NzY2M2NiMyIsImN1c3RvbTpsaWNlbnNlVmFsaWQiOiJudWxsIiwiZ2l2ZW5fbmFtZSI6IkFzbWEiLCJtaWRkbGVfbmFtZSI6Im51bGwiLCJjdXN0b206c3RhdGUiOiJudWxsIiwicGljdHVyZSI6Im51bGwiLCJjdXN0b206Y2l0eSI6Im51bGwiLCJvcmlnaW5fanRpIjoiZWE4M2FlZTQtYzczZC00Yjg3LThhMmMtMjFiNTExNTBmNzg5IiwiY3VzdG9tOmdzdFBhbk5vIjoibnVsbCIsImF1ZCI6IjFyaTd0cDhjcXZiZWVlM2hmNzJvOWY3bHBuIiwiZXZlbnRfaWQiOiI3NmFiODhkYi01ZDY4LTQ2MWItODY3NS05NWY2ZjA0ZTFjMjYiLCJ0b2tlbl91c2UiOiJpZCIsImN1c3RvbTpyb2xlSWQiOiIzIiwibmFtZSI6Im51bGwiLCJwaG9uZV9udW1iZXIiOiIrOTE5ODc2NTQ1Njg2IiwiZmFtaWx5X25hbWUiOiJTaWRkaXF1YSJ9.X9e7xR0DPoQgieHUuXQLpYuML9S4aUi5rC155O55usHhTHu9_NCbWz2jO4em8FX3swf9YvT2hmdrQxkPGvKnmEEzvRjstj5-cJUrebwusH4EX5Z0gias-PpD7FHq0EqAhEUR2TdhRSu4pZLtyg7zFm7GPf1fFZFyV7NqRAmokoOmIDTbeVEKFga9LYG0owNhyCj1Qy2MJpqclO74Yk-4CGJvNIbhPP9SqCatNGJjsSYaaI-bORQ3ijcULL8MSIzcIL9RLZwnPScCCY3a8RBj7HVjGdpPLcHD9OJh5ODqjhUswZK73ckPp2imnhjP0FPPJvRacKr8xqu1YUB3JoHmuA`, // TODO: replace with the logged-in doctor's real Cognito token
+                    Authorization: `Bearer eyJraWQiOiJOaXBka0hRcXR6L2JCcjR2OXBvSGE4eWMwdnFpYnV4QWlVZnd6MFdEbSs0PSIsImFsZyI6IlJTMjU2In0.eyJzdWIiOiI4MWIzOWRmYS1hMDgxLTcwYTQtMjhmMS00ZjJlNTc2NjNjYjMiLCJjdXN0b206bGljZW5zZU5vIjoibnVsbCIsInpvbmVpbmZvIjoibnVsbCIsImJpcnRoZGF0ZSI6IjE5OTgtMDYtMDYiLCJnZW5kZXIiOiJGZW1hbGUiLCJpc3MiOiJodHRwczovL2NvZ25pdG8taWRwLmFwLXNvdXRoLTEuYW1hem9uYXdzLmNvbS9hcC1zb3V0aC0xX1FvOWM0ZHNBTCIsImN1c3RvbTpob3NwaXRhbE5hbWUiOiJudWxsIiwiY3VzdG9tOmlkIjoiNTE2IiwicHJlZmVycmVkX3VzZXJuYW1lIjoiZW1haWwiLCJsb2NhbGUiOiJudWxsIiwiY3VzdG9tOnJvbGVOYW1lIjoiSGVhbHRoIENvYWNoIiwidXBkYXRlZF9hdCI6MTc3MzgxMDUzNSwiY3VzdG9tOnppcGNvZGUiOiJudWxsIiwiYXV0aF90aW1lIjoxNzg5MTA2MDM5LCJuaWNrbmFtZSI6Im51bGwiLCJleHAiOjE3ODkxMDk2MzksImlhdCI6MTc4OTEwNjAzOSwianRpIjoiZGMwNTBmZGQtMjQ0MS00YTg1LWE2M2ItZmIwZjk4MTllNzM5IiwiZW1haWwiOiJhc21hLnNAeW9wbWFpbC5jb20iLCJjdXN0b206b3JnYW5pemF0aW9uIjoibnVsbCIsIndlYnNpdGUiOiJudWxsIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImFkZHJlc3MiOnsiZm9ybWF0dGVkIjoiQmFuZ2Fsb3JlIn0sInByb2ZpbGUiOiJodHRwczovL2Rldi1kYXRhLmdsaXhpZnkuYWkvcHJvZmlsZS81MTYvMTc3NDYwMTExMTcyMGp3dC5pY29uLjZhOWFjMTE3LnBuZyIsInBob25lX251bWJlcl92ZXJpZmllZCI6dHJ1ZSwiY29nbml0bzp1c2VybmFtZSI6IjgxYjM5ZGZhLWEwODEtNzBhNC0yOGYxLTRmMmU1NzY2M2NiMyIsImN1c3RvbTpsaWNlbnNlVmFsaWQiOiJudWxsIiwiZ2l2ZW5fbmFtZSI6IkFzbWEiLCJtaWRkbGVfbmFtZSI6Im51bGwiLCJjdXN0b206c3RhdGUiOiJudWxsIiwicGljdHVyZSI6Im51bGwiLCJjdXN0b206Y2l0eSI6Im51bGwiLCJvcmlnaW5fanRpIjoiN2YwODVkZWYtMDJmMS00NmMxLWIxNzEtNzkwNWFlZTc3NmY0IiwiY3VzdG9tOmdzdFBhbk5vIjoibnVsbCIsImF1ZCI6IjFyaTd0cDhjcXZiZWVlM2hmNzJvOWY3bHBuIiwiZXZlbnRfaWQiOiI0YWEyY2Y4NC04MTZjLTQ3YTEtYWVlNS02MTM3ZmE2N2JlMzciLCJ0b2tlbl91c2UiOiJpZCIsImN1c3RvbTpyb2xlSWQiOiIzIiwibmFtZSI6Im51bGwiLCJwaG9uZV9udW1iZXIiOiIrOTE5ODc2NTQ1Njg2IiwiZmFtaWx5X25hbWUiOiJTaWRkaXF1YSJ9.v6zFH8YXv1EDOSAlja0eSrC4behbrSMl80XS-BXLAkcU7sI1QQMynrW-d0VwCLr1-FbuXcZmoITfrTJIOsn8710caDM_BhADpsktbMqWhyEiD35f6yWA6TFEowDjecaKfld1HKkJvyhI_l9GjXrD7jXRLtVgggR3_xikB4GqYPCJnLBTG3B6z3nzslQyRNIfUDuc0uAzqtVLejaHr3mXraftydvTy0nlAKrE7U5TKqUJWIfeOqLuukJRZDDaYKj2ZPqKY6X5C5xhDEJ3vjSvNp8MkuLPMjizKpxKtzhXGAc64CQ8kjvFxq5d-MNPEBQavd8px6az6ZJpm5Qa0Jdllg`,
                 },
                 body: JSON.stringify({
                     query: query,
@@ -198,6 +209,8 @@ const Chatbot: React.FC = () => {
             const botMessage = data.response;
             const metadata = data.metadata;
             const chartData = data.chart_data;
+            const agpChartData = data.agpChartData;
+            const ehba1cTirData = data.ehba1cTirData;
             setChatHistory((prev) => [
                 ...prev,
                 {
@@ -205,6 +218,8 @@ const Chatbot: React.FC = () => {
                     message: botMessage,
                     metadata: metadata,
                     chartData: chartData,
+                    agpChartData: agpChartData,
+                    ehba1cTirData: ehba1cTirData,
                 },
             ]);
         } catch (error) {
@@ -417,7 +432,8 @@ const Chatbot: React.FC = () => {
                 headers: {
                     "Content-Type": "application/json",
                     // Authorization: `Bearer testtt`,
-                    Authorization: `Bearer eyJraWQiOiJOaXBka0hRcXR6L2JCcjR2OXBvSGE4eWMwdnFpYnV4QWlVZnd6MFdEbSs0PSIsImFsZyI6IlJTMjU2In0.eyJzdWIiOiI4MWIzOWRmYS1hMDgxLTcwYTQtMjhmMS00ZjJlNTc2NjNjYjMiLCJjdXN0b206bGljZW5zZU5vIjoibnVsbCIsInpvbmVpbmZvIjoibnVsbCIsImJpcnRoZGF0ZSI6IjE5OTgtMDYtMDYiLCJnZW5kZXIiOiJGZW1hbGUiLCJpc3MiOiJodHRwczovL2NvZ25pdG8taWRwLmFwLXNvdXRoLTEuYW1hem9uYXdzLmNvbS9hcC1zb3V0aC0xX1FvOWM0ZHNBTCIsImN1c3RvbTpob3NwaXRhbE5hbWUiOiJudWxsIiwiY3VzdG9tOmlkIjoiNTE2IiwicHJlZmVycmVkX3VzZXJuYW1lIjoiZW1haWwiLCJsb2NhbGUiOiJudWxsIiwiY3VzdG9tOnJvbGVOYW1lIjoiSGVhbHRoIENvYWNoIiwidXBkYXRlZF9hdCI6MTc3MzgxMDUzNSwiY3VzdG9tOnppcGNvZGUiOiJudWxsIiwiYXV0aF90aW1lIjoxNzg5MTAxNzg5LCJuaWNrbmFtZSI6Im51bGwiLCJleHAiOjE3ODkxMDUzODksImlhdCI6MTc4OTEwMTc4OSwianRpIjoiODRhY2M3MGQtNWQzZS00MjRhLTk1ZjYtOWRhZThjMTI0MDRlIiwiZW1haWwiOiJhc21hLnNAeW9wbWFpbC5jb20iLCJjdXN0b206b3JnYW5pemF0aW9uIjoibnVsbCIsIndlYnNpdGUiOiJudWxsIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImFkZHJlc3MiOnsiZm9ybWF0dGVkIjoiQmFuZ2Fsb3JlIn0sInByb2ZpbGUiOiJodHRwczovL2Rldi1kYXRhLmdsaXhpZnkuYWkvcHJvZmlsZS81MTYvMTc3NDYwMTExMTcyMGp3dC5pY29uLjZhOWFjMTE3LnBuZyIsInBob25lX251bWJlcl92ZXJpZmllZCI6dHJ1ZSwiY29nbml0bzp1c2VybmFtZSI6IjgxYjM5ZGZhLWEwODEtNzBhNC0yOGYxLTRmMmU1NzY2M2NiMyIsImN1c3RvbTpsaWNlbnNlVmFsaWQiOiJudWxsIiwiZ2l2ZW5fbmFtZSI6IkFzbWEiLCJtaWRkbGVfbmFtZSI6Im51bGwiLCJjdXN0b206c3RhdGUiOiJudWxsIiwicGljdHVyZSI6Im51bGwiLCJjdXN0b206Y2l0eSI6Im51bGwiLCJvcmlnaW5fanRpIjoiZWE4M2FlZTQtYzczZC00Yjg3LThhMmMtMjFiNTExNTBmNzg5IiwiY3VzdG9tOmdzdFBhbk5vIjoibnVsbCIsImF1ZCI6IjFyaTd0cDhjcXZiZWVlM2hmNzJvOWY3bHBuIiwiZXZlbnRfaWQiOiI3NmFiODhkYi01ZDY4LTQ2MWItODY3NS05NWY2ZjA0ZTFjMjYiLCJ0b2tlbl91c2UiOiJpZCIsImN1c3RvbTpyb2xlSWQiOiIzIiwibmFtZSI6Im51bGwiLCJwaG9uZV9udW1iZXIiOiIrOTE5ODc2NTQ1Njg2IiwiZmFtaWx5X25hbWUiOiJTaWRkaXF1YSJ9.X9e7xR0DPoQgieHUuXQLpYuML9S4aUi5rC155O55usHhTHu9_NCbWz2jO4em8FX3swf9YvT2hmdrQxkPGvKnmEEzvRjstj5-cJUrebwusH4EX5Z0gias-PpD7FHq0EqAhEUR2TdhRSu4pZLtyg7zFm7GPf1fFZFyV7NqRAmokoOmIDTbeVEKFga9LYG0owNhyCj1Qy2MJpqclO74Yk-4CGJvNIbhPP9SqCatNGJjsSYaaI-bORQ3ijcULL8MSIzcIL9RLZwnPScCCY3a8RBj7HVjGdpPLcHD9OJh5ODqjhUswZK73ckPp2imnhjP0FPPJvRacKr8xqu1YUB3JoHmuA`, // Use environment variable for API key
+                    Authorization: `Bearer eyJraWQiOiJOaXBka0hRcXR6L2JCcjR2OXBvSGE4eWMwdnFpYnV4QWlVZnd6MFdEbSs0PSIsImFsZyI6IlJTMjU2In0.eyJzdWIiOiI4MWIzOWRmYS1hMDgxLTcwYTQtMjhmMS00ZjJlNTc2NjNjYjMiLCJjdXN0b206bGljZW5zZU5vIjoibnVsbCIsInpvbmVpbmZvIjoibnVsbCIsImJpcnRoZGF0ZSI6IjE5OTgtMDYtMDYiLCJnZW5kZXIiOiJGZW1hbGUiLCJpc3MiOiJodHRwczovL2NvZ25pdG8taWRwLmFwLXNvdXRoLTEuYW1hem9uYXdzLmNvbS9hcC1zb3V0aC0xX1FvOWM0ZHNBTCIsImN1c3RvbTpob3NwaXRhbE5hbWUiOiJudWxsIiwiY3VzdG9tOmlkIjoiNTE2IiwicHJlZmVycmVkX3VzZXJuYW1lIjoiZW1haWwiLCJsb2NhbGUiOiJudWxsIiwiY3VzdG9tOnJvbGVOYW1lIjoiSGVhbHRoIENvYWNoIiwidXBkYXRlZF9hdCI6MTc3MzgxMDUzNSwiY3VzdG9tOnppcGNvZGUiOiJudWxsIiwiYXV0aF90aW1lIjoxNzg5MTA2MDM5LCJuaWNrbmFtZSI6Im51bGwiLCJleHAiOjE3ODkxMDk2MzksImlhdCI6MTc4OTEwNjAzOSwianRpIjoiZGMwNTBmZGQtMjQ0MS00YTg1LWE2M2ItZmIwZjk4MTllNzM5IiwiZW1haWwiOiJhc21hLnNAeW9wbWFpbC5jb20iLCJjdXN0b206b3JnYW5pemF0aW9uIjoibnVsbCIsIndlYnNpdGUiOiJudWxsIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImFkZHJlc3MiOnsiZm9ybWF0dGVkIjoiQmFuZ2Fsb3JlIn0sInByb2ZpbGUiOiJodHRwczovL2Rldi1kYXRhLmdsaXhpZnkuYWkvcHJvZmlsZS81MTYvMTc3NDYwMTExMTcyMGp3dC5pY29uLjZhOWFjMTE3LnBuZyIsInBob25lX251bWJlcl92ZXJpZmllZCI6dHJ1ZSwiY29nbml0bzp1c2VybmFtZSI6IjgxYjM5ZGZhLWEwODEtNzBhNC0yOGYxLTRmMmU1NzY2M2NiMyIsImN1c3RvbTpsaWNlbnNlVmFsaWQiOiJudWxsIiwiZ2l2ZW5fbmFtZSI6IkFzbWEiLCJtaWRkbGVfbmFtZSI6Im51bGwiLCJjdXN0b206c3RhdGUiOiJudWxsIiwicGljdHVyZSI6Im51bGwiLCJjdXN0b206Y2l0eSI6Im51bGwiLCJvcmlnaW5fanRpIjoiN2YwODVkZWYtMDJmMS00NmMxLWIxNzEtNzkwNWFlZTc3NmY0IiwiY3VzdG9tOmdzdFBhbk5vIjoibnVsbCIsImF1ZCI6IjFyaTd0cDhjcXZiZWVlM2hmNzJvOWY3bHBuIiwiZXZlbnRfaWQiOiI0YWEyY2Y4NC04MTZjLTQ3YTEtYWVlNS02MTM3ZmE2N2JlMzciLCJ0b2tlbl91c2UiOiJpZCIsImN1c3RvbTpyb2xlSWQiOiIzIiwibmFtZSI6Im51bGwiLCJwaG9uZV9udW1iZXIiOiIrOTE5ODc2NTQ1Njg2IiwiZmFtaWx5X25hbWUiOiJTaWRkaXF1YSJ9.v6zFH8YXv1EDOSAlja0eSrC4behbrSMl80XS-BXLAkcU7sI1QQMynrW-d0VwCLr1-FbuXcZmoITfrTJIOsn8710caDM_BhADpsktbMqWhyEiD35f6yWA6TFEowDjecaKfld1HKkJvyhI_l9GjXrD7jXRLtVgggR3_xikB4GqYPCJnLBTG3B6z3nzslQyRNIfUDuc0uAzqtVLejaHr3mXraftydvTy0nlAKrE7U5TKqUJWIfeOqLuukJRZDDaYKj2ZPqKY6X5C5xhDEJ3vjSvNp8MkuLPMjizKpxKtzhXGAc64CQ8kjvFxq5d-MNPEBQavd8px6az6ZJpm5Qa0Jdllg`,
+                     // Use environment variable for API key
                 },
                 body: JSON.stringify({
                     audioBase64,                // expected key
@@ -434,6 +450,7 @@ const Chatbot: React.FC = () => {
             const data = await response.json();
             const botMessage = data.response;
             const metadata = data.metadata;
+            const imageBase64 = data.chartImageBase64;
 
             // Show the (translated, if available) question first
             const displayedQuestion = pickDisplayedTranscript(data, language);
@@ -448,6 +465,7 @@ const Chatbot: React.FC = () => {
                     role: "bot",
                     message: botMessage,
                     metadata: metadata,
+                    imageBase64: imageBase64,
                 },
             ]);
         } catch (error) {
@@ -527,6 +545,15 @@ const Chatbot: React.FC = () => {
                                                 <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{chat.message}</ReactMarkdown>
                                             ) : (
                                                 <span>{chat.message}</span>
+                                            )}
+                                            {chat.role === "bot" && chat.agpChartData?.time_blocks && (
+                                                <AGPChart timeBlocks={chat.agpChartData.time_blocks} />
+                                            )}
+                                            {chat.role === "bot" && chat.agpChartData?.tir && (
+                                                <TIRChart tir={chat.agpChartData.tir} />
+                                            )}
+                                            {chat.role === "bot" && chat.ehba1cTirData?.periods && chat.ehba1cTirData.periods.length > 0 && (
+                                                <EHbA1cTIRChart periods={chat.ehba1cTirData.periods} />
                                             )}
                                         </div>
                                         {chat.role === "bot" && chat.chartData && (
