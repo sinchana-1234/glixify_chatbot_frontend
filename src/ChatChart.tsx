@@ -6,11 +6,12 @@ import {
 } from "recharts";
 
 export interface ChartPayload {
-    type: "line" | "stackedArea" | "stackedBar" | "bar" | "overlayArea";
+    type: "line" | "stackedArea" | "stackedBar" | "bar" | "overlayArea" | "area";
     title: string;
     x_labels: string[];
     series: { name: string; values: number[] }[];
     dual_axis?: boolean;
+    color?: string;
     stats?: {
         avg_tir_pct?: number | null;
         avg_bp?: string | null;
@@ -60,8 +61,24 @@ export default function ChatChart({ data }: ChatChartProps) {
                 <p className="text-xs text-gray-500 mb-1">{data.series[0].name}</p>
             )}
             <div style={{ width: "100%", height: showLegend ? 220 : 190 }}>
-                <ResponsiveContainer>
-                    {data.type === "overlayArea" ? (
+                                <ResponsiveContainer>
+                                        {data.type === "area" ? (
+                        <AreaChart data={chartRows} margin={commonMargin}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <XAxis dataKey="label" tick={{ fontSize: 9 }} angle={-40} textAnchor="end" height={40} interval={0} />
+                            <YAxis tick={{ fontSize: 10 }} domain={['dataMin - 1', 'dataMax + 1']} />
+                            <Tooltip content={<CompactTooltip />} />
+                            <Area
+                                type="monotone"
+                                dataKey={data.series[0].name}
+                                stroke={data.color || COLORS[0]}
+                                fill={data.color || COLORS[0]}
+                                fillOpacity={0.25}
+                                dot={false}
+                                activeDot={{ r: 4 }}
+                            />
+                        </AreaChart>
+                    ) : data.type === "overlayArea" ? (
                         <AreaChart data={chartRows} margin={commonMargin}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} />
                             <XAxis dataKey="label" tick={{ fontSize: 9 }} angle={-40} textAnchor="end" height={40} interval={0} />
