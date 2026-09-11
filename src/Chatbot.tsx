@@ -1,6 +1,8 @@
 // frontend/chatbot.tsx
 import React, { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import ChatChart, { ChartPayload } from "./ChatChart";
 
 // Extend Window interface for potential browser APIs
 declare global {
@@ -29,7 +31,7 @@ const Chatbot: React.FC = () => {
     const [userQuery, setUserQuery] = useState<string>("");
     // Chat history (user and bot messages)
     const [chatHistory, setChatHistory] = useState<
-        { role: "user" | "bot"; message: string; metadata?: any }[]
+        { role: "user" | "bot"; message: string; metadata?: any; chartData?: ChartPayload }[]
     >([
         {
             role: "bot",
@@ -136,9 +138,22 @@ const Chatbot: React.FC = () => {
                 </pre>
             );
         },
-        blockquote: ({ children }: any) => (
+                blockquote: ({ children }: any) => (
             <blockquote className="border-l-4 border-blue-300 pl-4 my-2 italic text-gray-600">{children}</blockquote>
         ),
+        table: ({ children }: any) => (
+            <div className="overflow-x-auto my-3">
+                <table className="min-w-full text-xs border-collapse">{children}</table>
+            </div>
+        ),
+        thead: ({ children }: any) => <thead className="bg-gray-100">{children}</thead>,
+        th: ({ children }: any) => (
+            <th className="border border-gray-300 px-2 py-1 text-left font-semibold whitespace-nowrap">{children}</th>
+        ),
+        td: ({ children }: any) => (
+            <td className="border border-gray-300 px-2 py-1 whitespace-nowrap">{children}</td>
+        ),
+        tr: ({ children }: any) => <tr className="even:bg-gray-50">{children}</tr>,
     };
 
     // Auto-scroll to last message when chatHistory changes
@@ -169,7 +184,7 @@ const Chatbot: React.FC = () => {
                     "Content-Type": "application/json",
                     // Use doctor token for now; in a real app this should come from auth context
                     // Authorization: `Bearer testtt`,
-                    Authorization: `Bearer dXwXeLy-6Uzgqeqv978h4g:APA91bGC0lHYVwL1xjdhD20o_hotVDG7sxg_hOGDY-rJe18Va8j09dNpzndb3LEYwgwoGZ48D-jLkr2acRgqn2CtS4oz6RVdw_cbEXxyr4_g5P0VXIMTFr0`, // Use environment variable for API key
+                                        Authorization: `Bearer eyJraWQiOiJOaXBka0hRcXR6L2JCcjR2OXBvSGE4eWMwdnFpYnV4QWlVZnd6MFdEbSs0PSIsImFsZyI6IlJTMjU2In0.eyJzdWIiOiI4MWIzOWRmYS1hMDgxLTcwYTQtMjhmMS00ZjJlNTc2NjNjYjMiLCJjdXN0b206bGljZW5zZU5vIjoibnVsbCIsInpvbmVpbmZvIjoibnVsbCIsImJpcnRoZGF0ZSI6IjE5OTgtMDYtMDYiLCJnZW5kZXIiOiJGZW1hbGUiLCJpc3MiOiJodHRwczovL2NvZ25pdG8taWRwLmFwLXNvdXRoLTEuYW1hem9uYXdzLmNvbS9hcC1zb3V0aC0xX1FvOWM0ZHNBTCIsImN1c3RvbTpob3NwaXRhbE5hbWUiOiJudWxsIiwiY3VzdG9tOmlkIjoiNTE2IiwicHJlZmVycmVkX3VzZXJuYW1lIjoiZW1haWwiLCJsb2NhbGUiOiJudWxsIiwiY3VzdG9tOnJvbGVOYW1lIjoiSGVhbHRoIENvYWNoIiwidXBkYXRlZF9hdCI6MTc3MzgxMDUzNSwiY3VzdG9tOnppcGNvZGUiOiJudWxsIiwiYXV0aF90aW1lIjoxNzg5MTAxNzg5LCJuaWNrbmFtZSI6Im51bGwiLCJleHAiOjE3ODkxMDUzODksImlhdCI6MTc4OTEwMTc4OSwianRpIjoiODRhY2M3MGQtNWQzZS00MjRhLTk1ZjYtOWRhZThjMTI0MDRlIiwiZW1haWwiOiJhc21hLnNAeW9wbWFpbC5jb20iLCJjdXN0b206b3JnYW5pemF0aW9uIjoibnVsbCIsIndlYnNpdGUiOiJudWxsIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImFkZHJlc3MiOnsiZm9ybWF0dGVkIjoiQmFuZ2Fsb3JlIn0sInByb2ZpbGUiOiJodHRwczovL2Rldi1kYXRhLmdsaXhpZnkuYWkvcHJvZmlsZS81MTYvMTc3NDYwMTExMTcyMGp3dC5pY29uLjZhOWFjMTE3LnBuZyIsInBob25lX251bWJlcl92ZXJpZmllZCI6dHJ1ZSwiY29nbml0bzp1c2VybmFtZSI6IjgxYjM5ZGZhLWEwODEtNzBhNC0yOGYxLTRmMmU1NzY2M2NiMyIsImN1c3RvbTpsaWNlbnNlVmFsaWQiOiJudWxsIiwiZ2l2ZW5fbmFtZSI6IkFzbWEiLCJtaWRkbGVfbmFtZSI6Im51bGwiLCJjdXN0b206c3RhdGUiOiJudWxsIiwicGljdHVyZSI6Im51bGwiLCJjdXN0b206Y2l0eSI6Im51bGwiLCJvcmlnaW5fanRpIjoiZWE4M2FlZTQtYzczZC00Yjg3LThhMmMtMjFiNTExNTBmNzg5IiwiY3VzdG9tOmdzdFBhbk5vIjoibnVsbCIsImF1ZCI6IjFyaTd0cDhjcXZiZWVlM2hmNzJvOWY3bHBuIiwiZXZlbnRfaWQiOiI3NmFiODhkYi01ZDY4LTQ2MWItODY3NS05NWY2ZjA0ZTFjMjYiLCJ0b2tlbl91c2UiOiJpZCIsImN1c3RvbTpyb2xlSWQiOiIzIiwibmFtZSI6Im51bGwiLCJwaG9uZV9udW1iZXIiOiIrOTE5ODc2NTQ1Njg2IiwiZmFtaWx5X25hbWUiOiJTaWRkaXF1YSJ9.X9e7xR0DPoQgieHUuXQLpYuML9S4aUi5rC155O55usHhTHu9_NCbWz2jO4em8FX3swf9YvT2hmdrQxkPGvKnmEEzvRjstj5-cJUrebwusH4EX5Z0gias-PpD7FHq0EqAhEUR2TdhRSu4pZLtyg7zFm7GPf1fFZFyV7NqRAmokoOmIDTbeVEKFga9LYG0owNhyCj1Qy2MJpqclO74Yk-4CGJvNIbhPP9SqCatNGJjsSYaaI-bORQ3ijcULL8MSIzcIL9RLZwnPScCCY3a8RBj7HVjGdpPLcHD9OJh5ODqjhUswZK73ckPp2imnhjP0FPPJvRacKr8xqu1YUB3JoHmuA`, // TODO: replace with the logged-in doctor's real Cognito token
                 },
                 body: JSON.stringify({
                     query: query,
@@ -182,12 +197,14 @@ const Chatbot: React.FC = () => {
             const data = await response.json();
             const botMessage = data.response;
             const metadata = data.metadata;
+            const chartData = data.chart_data;
             setChatHistory((prev) => [
                 ...prev,
                 {
                     role: "bot",
                     message: botMessage,
                     metadata: metadata,
+                    chartData: chartData,
                 },
             ]);
         } catch (error) {
@@ -400,7 +417,7 @@ const Chatbot: React.FC = () => {
                 headers: {
                     "Content-Type": "application/json",
                     // Authorization: `Bearer testtt`,
-                    Authorization: `Bearer dXwXeLy-6Uzgqeqv978h4g:APA91bGC0lHYVwL1xjdhD20o_hotVDG7sxg_hOGDY-rJe18Va8j09dNpzndb3LEYwgwoGZ48D-jLkr2acRgqn2CtS4oz6RVdw_cbEXxyr4_g5P0VXIMTFr0`, // Use environment variable for API key
+                    Authorization: `Bearer eyJraWQiOiJOaXBka0hRcXR6L2JCcjR2OXBvSGE4eWMwdnFpYnV4QWlVZnd6MFdEbSs0PSIsImFsZyI6IlJTMjU2In0.eyJzdWIiOiI4MWIzOWRmYS1hMDgxLTcwYTQtMjhmMS00ZjJlNTc2NjNjYjMiLCJjdXN0b206bGljZW5zZU5vIjoibnVsbCIsInpvbmVpbmZvIjoibnVsbCIsImJpcnRoZGF0ZSI6IjE5OTgtMDYtMDYiLCJnZW5kZXIiOiJGZW1hbGUiLCJpc3MiOiJodHRwczovL2NvZ25pdG8taWRwLmFwLXNvdXRoLTEuYW1hem9uYXdzLmNvbS9hcC1zb3V0aC0xX1FvOWM0ZHNBTCIsImN1c3RvbTpob3NwaXRhbE5hbWUiOiJudWxsIiwiY3VzdG9tOmlkIjoiNTE2IiwicHJlZmVycmVkX3VzZXJuYW1lIjoiZW1haWwiLCJsb2NhbGUiOiJudWxsIiwiY3VzdG9tOnJvbGVOYW1lIjoiSGVhbHRoIENvYWNoIiwidXBkYXRlZF9hdCI6MTc3MzgxMDUzNSwiY3VzdG9tOnppcGNvZGUiOiJudWxsIiwiYXV0aF90aW1lIjoxNzg5MTAxNzg5LCJuaWNrbmFtZSI6Im51bGwiLCJleHAiOjE3ODkxMDUzODksImlhdCI6MTc4OTEwMTc4OSwianRpIjoiODRhY2M3MGQtNWQzZS00MjRhLTk1ZjYtOWRhZThjMTI0MDRlIiwiZW1haWwiOiJhc21hLnNAeW9wbWFpbC5jb20iLCJjdXN0b206b3JnYW5pemF0aW9uIjoibnVsbCIsIndlYnNpdGUiOiJudWxsIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImFkZHJlc3MiOnsiZm9ybWF0dGVkIjoiQmFuZ2Fsb3JlIn0sInByb2ZpbGUiOiJodHRwczovL2Rldi1kYXRhLmdsaXhpZnkuYWkvcHJvZmlsZS81MTYvMTc3NDYwMTExMTcyMGp3dC5pY29uLjZhOWFjMTE3LnBuZyIsInBob25lX251bWJlcl92ZXJpZmllZCI6dHJ1ZSwiY29nbml0bzp1c2VybmFtZSI6IjgxYjM5ZGZhLWEwODEtNzBhNC0yOGYxLTRmMmU1NzY2M2NiMyIsImN1c3RvbTpsaWNlbnNlVmFsaWQiOiJudWxsIiwiZ2l2ZW5fbmFtZSI6IkFzbWEiLCJtaWRkbGVfbmFtZSI6Im51bGwiLCJjdXN0b206c3RhdGUiOiJudWxsIiwicGljdHVyZSI6Im51bGwiLCJjdXN0b206Y2l0eSI6Im51bGwiLCJvcmlnaW5fanRpIjoiZWE4M2FlZTQtYzczZC00Yjg3LThhMmMtMjFiNTExNTBmNzg5IiwiY3VzdG9tOmdzdFBhbk5vIjoibnVsbCIsImF1ZCI6IjFyaTd0cDhjcXZiZWVlM2hmNzJvOWY3bHBuIiwiZXZlbnRfaWQiOiI3NmFiODhkYi01ZDY4LTQ2MWItODY3NS05NWY2ZjA0ZTFjMjYiLCJ0b2tlbl91c2UiOiJpZCIsImN1c3RvbTpyb2xlSWQiOiIzIiwibmFtZSI6Im51bGwiLCJwaG9uZV9udW1iZXIiOiIrOTE5ODc2NTQ1Njg2IiwiZmFtaWx5X25hbWUiOiJTaWRkaXF1YSJ9.X9e7xR0DPoQgieHUuXQLpYuML9S4aUi5rC155O55usHhTHu9_NCbWz2jO4em8FX3swf9YvT2hmdrQxkPGvKnmEEzvRjstj5-cJUrebwusH4EX5Z0gias-PpD7FHq0EqAhEUR2TdhRSu4pZLtyg7zFm7GPf1fFZFyV7NqRAmokoOmIDTbeVEKFga9LYG0owNhyCj1Qy2MJpqclO74Yk-4CGJvNIbhPP9SqCatNGJjsSYaaI-bORQ3ijcULL8MSIzcIL9RLZwnPScCCY3a8RBj7HVjGdpPLcHD9OJh5ODqjhUswZK73ckPp2imnhjP0FPPJvRacKr8xqu1YUB3JoHmuA`, // Use environment variable for API key
                 },
                 body: JSON.stringify({
                     audioBase64,                // expected key
@@ -507,11 +524,14 @@ const Chatbot: React.FC = () => {
                                         <strong>{chat.role === "user" ? "You" : "Bot"}:</strong>{" "}
                                         <div className="mt-2">
                                             {chat.role === "bot" ? (
-                                                <ReactMarkdown components={markdownComponents}>{chat.message}</ReactMarkdown>
+                                                <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{chat.message}</ReactMarkdown>
                                             ) : (
                                                 <span>{chat.message}</span>
                                             )}
                                         </div>
+                                        {chat.role === "bot" && chat.chartData && (
+                                            <ChatChart data={chat.chartData} />
+                                        )}
                                     </div>
                                 </div>
                             ))}
