@@ -56,15 +56,16 @@ export default function ChatChart({ data }: ChatChartProps) {
     const commonMargin = { top: 5, right: 10, left: -20, bottom: 20 };
 
     return (
-        <div className="mt-2">
+        <div className="mt-2 bg-white rounded-lg shadow-sm border border-gray-100 p-3">
+            <p className="text-sm font-semibold text-gray-700 mb-2">{data.title}</p>
             {!showLegend && (
                 <p className="text-xs text-gray-500 mb-1">{data.series[0].name}</p>
             )}
             <div style={{ width: "100%", height: showLegend ? 220 : 190 }}>
-                                <ResponsiveContainer>
-                                        {data.type === "area" ? (
+                <ResponsiveContainer>
+                    {data.type === "area" ? (
                         <AreaChart data={chartRows} margin={commonMargin}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
                             <XAxis dataKey="label" tick={{ fontSize: 9 }} angle={-40} textAnchor="end" height={40} interval={0} />
                             <YAxis tick={{ fontSize: 10 }} domain={['dataMin - 1', 'dataMax + 1']} />
                             <Tooltip content={<CompactTooltip />} />
@@ -80,7 +81,7 @@ export default function ChatChart({ data }: ChatChartProps) {
                         </AreaChart>
                     ) : data.type === "overlayArea" ? (
                         <AreaChart data={chartRows} margin={commonMargin}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
                             <XAxis dataKey="label" tick={{ fontSize: 9 }} angle={-40} textAnchor="end" height={40} interval={0} />
                             <YAxis tick={{ fontSize: 10 }} domain={[0, 100]} />
                             <Tooltip content={<CompactTooltip />} />
@@ -98,7 +99,7 @@ export default function ChatChart({ data }: ChatChartProps) {
                         </AreaChart>
                     ) : data.type === "stackedArea" ? (
                         <AreaChart data={chartRows} margin={commonMargin}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
                             <XAxis dataKey="label" tick={{ fontSize: 9 }} angle={-40} textAnchor="end" height={40} interval={0} />
                             <YAxis tick={{ fontSize: 10 }} />
                             <Tooltip content={<CompactTooltip />} />
@@ -117,7 +118,7 @@ export default function ChatChart({ data }: ChatChartProps) {
                         </AreaChart>
                     ) : data.type === "stackedBar" ? (
                         <BarChart data={chartRows} margin={commonMargin}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
                             <XAxis dataKey="label" tick={{ fontSize: 9 }} angle={-40} textAnchor="end" height={40} interval={0} />
                             <YAxis tick={{ fontSize: 10 }} />
                             <Tooltip content={<CompactTooltip />} />
@@ -128,7 +129,7 @@ export default function ChatChart({ data }: ChatChartProps) {
                         </BarChart>
                     ) : data.type === "bar" ? (
                         <BarChart data={chartRows} margin={commonMargin}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
                             <XAxis dataKey="label" tick={{ fontSize: 9 }} angle={-40} textAnchor="end" height={40} interval={0} />
                             <YAxis tick={{ fontSize: 10 }} />
                             <Tooltip content={<CompactTooltip />} />
@@ -136,7 +137,7 @@ export default function ChatChart({ data }: ChatChartProps) {
                         </BarChart>
                     ) : (
                         <LineChart data={chartRows} margin={commonMargin}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
                             <XAxis dataKey="label" tick={{ fontSize: 9 }} angle={-40} textAnchor="end" height={40} interval={0} />
                             <YAxis yAxisId="left" tick={{ fontSize: 10 }} />
                             {data.dual_axis && (

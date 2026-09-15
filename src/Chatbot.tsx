@@ -6,6 +6,7 @@ import ChatChart, { ChartPayload } from "./ChatChart";
 import AGPChart from "./AGPChart";
 import TIRChart from "./TIRChart";
 import EHbA1cTIRChart from "./EHbA1cTIRChart";
+import { getAuthToken } from "./auth";
 
 // Extend Window interface for potential browser APIs
 declare global {
@@ -58,7 +59,6 @@ const Chatbot: React.FC = () => {
     // Voice recording state
     const [showMicOptions, setShowMicOptions] = useState<boolean>(false);
     const [isRecording, setIsRecording] = useState<boolean>(false);
-    const [selectedLanguage, setSelectedLanguage] = useState<"regional" | "international" | null>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioChunksRef = useRef<Blob[]>([]);
 
@@ -184,6 +184,16 @@ const Chatbot: React.FC = () => {
         }
         setUserQuery(""); // Clear input field immediately
 
+        // Read the live ID token from the logged-in Glixify session.
+        const token = getAuthToken();
+        if (!token) {
+            setChatHistory((prev) => [
+                ...prev,
+                { role: "bot", message: "You appear to be signed out. Please log in to Glixify and try again." },
+            ]);
+            return;
+        }
+
         // Add user's message to chat history
         setChatHistory((prev) => [...prev, { role: "user", message: query }]);
         setIsLoading(true);
@@ -193,15 +203,20 @@ const Chatbot: React.FC = () => {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    // Use doctor token for now; in a real app this should come from auth context
-                    // Authorization: `Bearer testtt`,
-                                        Authorization: `Bearer eyJraWQiOiJOaXBka0hRcXR6L2JCcjR2OXBvSGE4eWMwdnFpYnV4QWlVZnd6MFdEbSs0PSIsImFsZyI6IlJTMjU2In0.eyJzdWIiOiI4MWIzOWRmYS1hMDgxLTcwYTQtMjhmMS00ZjJlNTc2NjNjYjMiLCJjdXN0b206bGljZW5zZU5vIjoibnVsbCIsInpvbmVpbmZvIjoibnVsbCIsImJpcnRoZGF0ZSI6IjE5OTgtMDYtMDYiLCJnZW5kZXIiOiJGZW1hbGUiLCJpc3MiOiJodHRwczovL2NvZ25pdG8taWRwLmFwLXNvdXRoLTEuYW1hem9uYXdzLmNvbS9hcC1zb3V0aC0xX1FvOWM0ZHNBTCIsImN1c3RvbTpob3NwaXRhbE5hbWUiOiJudWxsIiwiY3VzdG9tOmlkIjoiNTE2IiwicHJlZmVycmVkX3VzZXJuYW1lIjoiZW1haWwiLCJsb2NhbGUiOiJudWxsIiwiY3VzdG9tOnJvbGVOYW1lIjoiSGVhbHRoIENvYWNoIiwidXBkYXRlZF9hdCI6MTc3MzgxMDUzNSwiY3VzdG9tOnppcGNvZGUiOiJudWxsIiwiYXV0aF90aW1lIjoxNzg5MTEwMTEzLCJuaWNrbmFtZSI6Im51bGwiLCJleHAiOjE3ODkxMTM3MTMsImlhdCI6MTc4OTExMDExMywianRpIjoiOGU1YTMxNWUtOGViNC00YTIzLWI3YTQtYTdhNGFjOWM2NTRmIiwiZW1haWwiOiJhc21hLnNAeW9wbWFpbC5jb20iLCJjdXN0b206b3JnYW5pemF0aW9uIjoibnVsbCIsIndlYnNpdGUiOiJudWxsIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImFkZHJlc3MiOnsiZm9ybWF0dGVkIjoiQmFuZ2Fsb3JlIn0sInByb2ZpbGUiOiJodHRwczovL2Rldi1kYXRhLmdsaXhpZnkuYWkvcHJvZmlsZS81MTYvMTc3NDYwMTExMTcyMGp3dC5pY29uLjZhOWFjMTE3LnBuZyIsInBob25lX251bWJlcl92ZXJpZmllZCI6dHJ1ZSwiY29nbml0bzp1c2VybmFtZSI6IjgxYjM5ZGZhLWEwODEtNzBhNC0yOGYxLTRmMmU1NzY2M2NiMyIsImN1c3RvbTpsaWNlbnNlVmFsaWQiOiJudWxsIiwiZ2l2ZW5fbmFtZSI6IkFzbWEiLCJtaWRkbGVfbmFtZSI6Im51bGwiLCJjdXN0b206c3RhdGUiOiJudWxsIiwicGljdHVyZSI6Im51bGwiLCJjdXN0b206Y2l0eSI6Im51bGwiLCJvcmlnaW5fanRpIjoiZDMwNzNkNWYtNzcyMi00MWRjLWI2Y2ItOGFjMjY1Njk0NTVkIiwiY3VzdG9tOmdzdFBhbk5vIjoibnVsbCIsImF1ZCI6IjFyaTd0cDhjcXZiZWVlM2hmNzJvOWY3bHBuIiwiZXZlbnRfaWQiOiI0NTdkYTMxZC0xY2FjLTQ1NDAtYWVjOC1jMjg0NjBlMTg2YzciLCJ0b2tlbl91c2UiOiJpZCIsImN1c3RvbTpyb2xlSWQiOiIzIiwibmFtZSI6Im51bGwiLCJwaG9uZV9udW1iZXIiOiIrOTE5ODc2NTQ1Njg2IiwiZmFtaWx5X25hbWUiOiJTaWRkaXF1YSJ9.JDV3EE0EpY5_pQtatoevX7-haaBJ_afYgHzbNBIFv4klJ2P93QqVX6X3Rj9KWZI5bXnvho-AH7Cy6Y76W7UXAfIzwuEkS57u1xBRizSarDJPxMPf1-o02pl22w8aEWupZgxIxJIkf6Msi5MGRfymlTPWiCtHUqJTBC556oapNvVWRgXse0n5MkLxl7TvUJ3RRBcbga2LxaAYLqs-ly0dPaihKeXf91fuZdp5rxw6NzfjOkn_ZLq-xWw-vWIMw0K5YeYiQIPpE-UD6FG7Pu5zKC3seJZ-JxFJi9Xie6HEyu-20uhxTE7bV8gwoh4M0mMhlprM5D6DhyF4m0wE-bMQpw`, // TODO: replace with the logged-in doctor's real Cognito token
+                    Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({
                     query: query,
                     sessionId: sessionId,
                 }),
             });
+            if (response.status === 401) {
+                setChatHistory((prev) => [
+                    ...prev,
+                    { role: "bot", message: "Your session has expired. Please log in to Glixify again." },
+                ]);
+                return;
+            }
             if (!response.ok) {
                 throw new Error("Failed to fetch response from the server.");
             }
@@ -253,7 +268,6 @@ const Chatbot: React.FC = () => {
      * Adds silence detection to auto-stop.
      */
     const startRecording = async (language: "regional" | "international") => {
-        setSelectedLanguage(language);
         setShowMicOptions(false);
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -421,6 +435,16 @@ const Chatbot: React.FC = () => {
      * UI: show loader, then add transcribed/translated question as user bubble, then bot reply.
      */
     const sendVoiceMessage = async (base64Audio: string, language: "regional" | "international") => {
+        // Read the live ID token from the logged-in Glixify session.
+        const token = getAuthToken();
+        if (!token) {
+            setChatHistory((prev) => [
+                ...prev,
+                { role: "bot", message: "You appear to be signed out. Please log in to Glixify and try again." },
+            ]);
+            return;
+        }
+
         setIsLoading(true);
 
         try {
@@ -431,8 +455,7 @@ const Chatbot: React.FC = () => {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    // Authorization: `Bearer testtt`,
-                    Authorization: `Bearer eyJraWQiOiJOaXBka0hRcXR6L2JCcjR2OXBvSGE4eWMwdnFpYnV4QWlVZnd6MFdEbSs0PSIsImFsZyI6IlJTMjU2In0.eyJzdWIiOiI4MWIzOWRmYS1hMDgxLTcwYTQtMjhmMS00ZjJlNTc2NjNjYjMiLCJjdXN0b206bGljZW5zZU5vIjoibnVsbCIsInpvbmVpbmZvIjoibnVsbCIsImJpcnRoZGF0ZSI6IjE5OTgtMDYtMDYiLCJnZW5kZXIiOiJGZW1hbGUiLCJpc3MiOiJodHRwczovL2NvZ25pdG8taWRwLmFwLXNvdXRoLTEuYW1hem9uYXdzLmNvbS9hcC1zb3V0aC0xX1FvOWM0ZHNBTCIsImN1c3RvbTpob3NwaXRhbE5hbWUiOiJudWxsIiwiY3VzdG9tOmlkIjoiNTE2IiwicHJlZmVycmVkX3VzZXJuYW1lIjoiZW1haWwiLCJsb2NhbGUiOiJudWxsIiwiY3VzdG9tOnJvbGVOYW1lIjoiSGVhbHRoIENvYWNoIiwidXBkYXRlZF9hdCI6MTc3MzgxMDUzNSwiY3VzdG9tOnppcGNvZGUiOiJudWxsIiwiYXV0aF90aW1lIjoxNzg5MTEwMTEzLCJuaWNrbmFtZSI6Im51bGwiLCJleHAiOjE3ODkxMTM3MTMsImlhdCI6MTc4OTExMDExMywianRpIjoiOGU1YTMxNWUtOGViNC00YTIzLWI3YTQtYTdhNGFjOWM2NTRmIiwiZW1haWwiOiJhc21hLnNAeW9wbWFpbC5jb20iLCJjdXN0b206b3JnYW5pemF0aW9uIjoibnVsbCIsIndlYnNpdGUiOiJudWxsIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImFkZHJlc3MiOnsiZm9ybWF0dGVkIjoiQmFuZ2Fsb3JlIn0sInByb2ZpbGUiOiJodHRwczovL2Rldi1kYXRhLmdsaXhpZnkuYWkvcHJvZmlsZS81MTYvMTc3NDYwMTExMTcyMGp3dC5pY29uLjZhOWFjMTE3LnBuZyIsInBob25lX251bWJlcl92ZXJpZmllZCI6dHJ1ZSwiY29nbml0bzp1c2VybmFtZSI6IjgxYjM5ZGZhLWEwODEtNzBhNC0yOGYxLTRmMmU1NzY2M2NiMyIsImN1c3RvbTpsaWNlbnNlVmFsaWQiOiJudWxsIiwiZ2l2ZW5fbmFtZSI6IkFzbWEiLCJtaWRkbGVfbmFtZSI6Im51bGwiLCJjdXN0b206c3RhdGUiOiJudWxsIiwicGljdHVyZSI6Im51bGwiLCJjdXN0b206Y2l0eSI6Im51bGwiLCJvcmlnaW5fanRpIjoiZDMwNzNkNWYtNzcyMi00MWRjLWI2Y2ItOGFjMjY1Njk0NTVkIiwiY3VzdG9tOmdzdFBhbk5vIjoibnVsbCIsImF1ZCI6IjFyaTd0cDhjcXZiZWVlM2hmNzJvOWY3bHBuIiwiZXZlbnRfaWQiOiI0NTdkYTMxZC0xY2FjLTQ1NDAtYWVjOC1jMjg0NjBlMTg2YzciLCJ0b2tlbl91c2UiOiJpZCIsImN1c3RvbTpyb2xlSWQiOiIzIiwibmFtZSI6Im51bGwiLCJwaG9uZV9udW1iZXIiOiIrOTE5ODc2NTQ1Njg2IiwiZmFtaWx5X25hbWUiOiJTaWRkaXF1YSJ9.JDV3EE0EpY5_pQtatoevX7-haaBJ_afYgHzbNBIFv4klJ2P93QqVX6X3Rj9KWZI5bXnvho-AH7Cy6Y76W7UXAfIzwuEkS57u1xBRizSarDJPxMPf1-o02pl22w8aEWupZgxIxJIkf6Msi5MGRfymlTPWiCtHUqJTBC556oapNvVWRgXse0n5MkLxl7TvUJ3RRBcbga2LxaAYLqs-ly0dPaihKeXf91fuZdp5rxw6NzfjOkn_ZLq-xWw-vWIMw0K5YeYiQIPpE-UD6FG7Pu5zKC3seJZ-JxFJi9Xie6HEyu-20uhxTE7bV8gwoh4M0mMhlprM5D6DhyF4m0wE-bMQpw`, // Use environment variable for API key
+                    Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({
                     audioBase64,                // expected key
@@ -441,6 +464,13 @@ const Chatbot: React.FC = () => {
                 }),
             });
 
+            if (response.status === 401) {
+                setChatHistory((prev) => [
+                    ...prev,
+                    { role: "bot", message: "Your session has expired. Please log in to Glixify again." },
+                ]);
+                return;
+            }
             if (!response.ok) {
                 const errText = await response.text().catch(() => "");
                 throw new Error(`Failed to fetch voice response from the server. ${errText}`);
